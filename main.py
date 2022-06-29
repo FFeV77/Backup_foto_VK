@@ -15,7 +15,7 @@ class VK_photo:
         self.v_api = '5.131'
 
     def get_foto_album(self, user_id:int=None, album:str='profile', count:int=5):
-        '''Получает список фото в указанном альбоме ВК'''
+        '''Получает список фото в указанном альбоме ВК, указанного пользователя'''
         url = 'https://api.vk.com/method/photos.get'
         params = {
             'album_id': album,
@@ -44,6 +44,7 @@ class YaUploader:
         }
 
     def get_path(self, path:str):
+        '''Проверяет путь'''
         url = 'https://cloud-api.yandex.net/v1/disk/resources'
         params = {
             "path": path
@@ -53,6 +54,7 @@ class YaUploader:
         return check.status_code
 
     def post_path(self, path:str):
+        '''Создает путь'''
         url = 'https://cloud-api.yandex.net/v1/disk/resources'
         params = {
             "path": path
@@ -63,6 +65,7 @@ class YaUploader:
         return create.status_code
 
     def __check_upload_file(self, href):
+        '''Проверяет статус загрузки'''
         while True:
             headers = self.get_headers()
             request = requests.get(url=href, headers=headers)
@@ -79,6 +82,7 @@ class YaUploader:
         return
 
     def upload_file_directly(self, file_link: str, file_path: str):
+        '''Загружает файл на диск, запускает проверку загрузки'''
         url = 'https://cloud-api.yandex.net/v1/disk/resources/upload'
         params = {
             'url': file_link,
@@ -95,12 +99,11 @@ class YaUploader:
         return
 
     def vk_fotos_upload(self, files:list, album:str='VK_fotos'):
+        '''Обрабатывает список для загрузки, запускает загрузку'''
         self.post_path(album)
         print(f'\176 Начинаем загрузку файлов...')
         for file in files:
-            for size in file["sizes"]:
-                if size['type'] == 'w':
-                    file_link = size['url']
+            file_link = file['sizes'][-1]['url']
             file_path = f'{album}/{file["likes"]["count"]}.jpg'
             if self.get_path(file_path) == 200:
                 file_path = f'{album}/{file["likes"]["count"]}_{date.today()}.jpg'
@@ -109,15 +112,14 @@ class YaUploader:
             print('Загрузка завершена')
         return
 
-
-vk_user_id = 1
-vk_album = 'profile'
-yd_path = 'VK_fotos'
-foto_count = 5
+vk_user_id = 4837880 # ID пользователя ВК, по-умолчанию ссылается на себя
+vk_album = 'profile' # Альбом ВК скачивания, по умолчанию - альбом фото-профиля
+yd_path = 'VK_fotos' # папка на ЯндексДиске, куда сохранять фото
+foto_count = 5 # Срез фото для скачивания
 
 VK = VK_photo()
 YD = YaUploader()
 
-foto_list = VK.get_foto_album()
+foto_list = VK.get_foto_album(user_id = 4837880)
 YD.vk_fotos_upload(foto_list)
 
