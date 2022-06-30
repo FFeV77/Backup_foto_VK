@@ -1,10 +1,7 @@
-
-from datetime import date
 from time import sleep
 import requests
-from pprint import pprint
-from datetime import date
 import json
+from tqdm import tqdm
 
 with open('token.txt') as file:
     VK_TOKEN = file.readline()
@@ -15,7 +12,7 @@ class VK_photo:
         self.v_api = '5.131'
 
     def get_foto_album(self, user_id:int=None, album:str='profile', count:int=5):
-        '''Получает список фото в указанном альбоме ВК, указанного пользователя'''
+        '''Получает список фото в указанном альбоме ВК, указанного пользователя. Сохраняет информацию в .json'''
         url = 'https://api.vk.com/method/photos.get'
         params = {
             'album_id': album,
@@ -27,10 +24,11 @@ class VK_photo:
             }
         request = requests.get(url=url, params=params)
         response = request.json()
-        print(f'\176 В альбоме VK "{album}" найдено {response["response"]["count"]} фото.\nСохраняем {count} шт.')
+        print(f'\176 В альбоме VK "{album}" найдено {response["response"]["count"]} фото.')
         foto_list = response['response']['items']
+        data = [{'file_name':str(item['likes']['count']) + '.jpg', 'size': item['sizes'][-1]['type']} for item in foto_list]
         with open('foto_list.json', 'w') as file:
-            json.dump(foto_list, file, indent=1)
+            json.dump(data, file, indent=1)
         return foto_list
 
 class YaUploader:
@@ -61,7 +59,7 @@ class YaUploader:
             }
         headers = self.get_headers()
         create = requests.put(url=url, params=params, headers=headers)
-        print(f'Директория {path} создана на диске.')
+        print(f'\176 Директория {path} создана на диске.')
         return create.status_code
 
     def __check_upload_file(self, href):
@@ -71,14 +69,14 @@ class YaUploader:
             request = requests.get(url=href, headers=headers)
             response = request.json()
             if response['status'] == 'success':
-                print('Успешно')
+                #print('Успешно')
                 break
-            elif response['status'] == 'failed ':
-                print('Ошибка')
+            elif response['status'] == 'failed':
+                #print('Ошибка')
                 break
-            else:
-                print('В процессе...')
-                sleep(3)
+            elif response['status'] == 'in-progress':
+                #print('В процессе...')
+                sleep(0.5)
         return
 
     def upload_file_directly(self, file_link: str, file_path: str):
@@ -92,7 +90,7 @@ class YaUploader:
         request = requests.post(url=url, params=params, headers=headers)
         response = request.json()
         if request.status_code == 202:
-            print(f'\176 Скачивание файла {file_path} на ЯндексДиск...')
+            #print(f'\176 Скачивание файла {file_path} на ЯндексДиск...')
             self.__check_upload_file(response["href"])
         else:
             print(request.status_code, request.text)
@@ -102,24 +100,23 @@ class YaUploader:
         '''Обрабатывает список для загрузки, запускает загрузку'''
         self.post_path(album)
         print(f'\176 Начинаем загрузку файлов...')
-        for file in files:
+        for file in tqdm(files, desc='Копирование'):
             file_link = file['sizes'][-1]['url']
             file_path = f'{album}/{file["likes"]["count"]}.jpg'
             if self.get_path(file_path) == 200:
-                file_path = f'{album}/{file["likes"]["count"]}_{date.today()}.jpg'
+                file_path = f'{album}/{file["likes"]["count"]}_{file["date"]}.jpg'
             self.upload_file_directly(file_link, file_path)
         else:
-            print('Загрузка завершена')
+            print(f'Загрузка завершена. Загружено {len(files)} файлов')
         return
 
 vk_user_id = 4837880 # ID пользователя ВК, по-умолчанию ссылается на себя
 vk_album = 'profile' # Альбом ВК скачивания, по умолчанию - альбом фото-профиля
 yd_path = 'VK_fotos' # папка на ЯндексДиске, куда сохранять фото
-foto_count = 5 # Срез фото для скачивания
+foto_count = 15 # Срез фото для скачивания
 
 VK = VK_photo()
 YD = YaUploader()
 
-foto_list = VK.get_foto_album(user_id = 4837880)
-YD.vk_fotos_upload(foto_list)
-
+foto_list = VK.get_foto_album(count=foto_count)
+#YD.vk_fotos_upload(foto_list)
