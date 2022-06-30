@@ -119,4 +119,4 @@ VK = VK_photo()
 YD = YaUploader()
 
 foto_list = VK.get_foto_album(count=foto_count)
-#YD.vk_fotos_upload(foto_list)
+YD.vk_fotos_upload(foto_list)
