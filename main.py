@@ -62,6 +62,17 @@ class YaUploader:
         print(f'\176 Директория {path} создана на диске.')
         return create.status_code
 
+    def delete_path(self, path:str):
+        '''Удаляет путь'''
+        url = 'https://cloud-api.yandex.net/v1/disk/resources'
+        params = {
+            "path": path
+            }
+        headers = self.get_headers()
+        create = requests.delete(url=url, params=params, headers=headers)
+        print(f'\176 Директория {path} удалена.')
+        return create.status_code
+
     def __check_upload_file(self, href):
         '''Проверяет статус загрузки'''
         while True:
@@ -110,13 +121,16 @@ class YaUploader:
             print(f'Загрузка завершена. Загружено {len(files)} файлов')
         return
 
+
 vk_user_id = 4837880 # ID пользователя ВК, по-умолчанию ссылается на себя
 vk_album = 'profile' # Альбом ВК скачивания, по умолчанию - альбом фото-профиля
 yd_path = 'VK_fotos' # папка на ЯндексДиске, куда сохранять фото
 foto_count = 15 # Срез фото для скачивания
 
-VK = VK_photo()
-YD = YaUploader()
+if __name__ == '__main__':
 
-foto_list = VK.get_foto_album(count=foto_count)
-YD.vk_fotos_upload(foto_list)
+    VK = VK_photo()
+    YD = YaUploader()
+
+    foto_list = VK.get_foto_album(count=foto_count)
+    YD.vk_fotos_upload(foto_list)
